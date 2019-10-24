@@ -5,22 +5,22 @@ const jwtVerify = promisify(require('jsonwebtoken').verify);
 /* Prerequisites */
 
 // The CRN-based instance ID of the Certificate Manager service instance.
-const instanceCrn = "crn:v1:bluemix:public:cloudcerts:us-south:a/eff54442596ad67037bd251f3d69d6ed:1f1ac62e-85ee-4da9-8e3a-f30a80918843::";
+const instanceCrn = "";
 
 // An Service ID's API key with:
 // - "Administrator" platform access policy to the cluster the certificate will be deployed to.
 // - "Writer" service access policy to the Certificate Manager service instance the certificate is stored at.
-const apiKey = "XZdPp5pKpj5BM_1yt3137y420y8Y9vx9rqd2MDNewkGl";
+const apiKey = "";
 
 // The cluster ID.
-const clusterId = "c92f2252df98461faf8ce2144d1daca4";
+const clusterId = "";
 
 // The secret name as defined in your Ingress service.
-const secretName = "mySecretName";
+const secretName = "";
 
 // A Slack webhook and channel to send success/failure notifications to.
-const slackWebhook = "https://hooks.slack.com/services/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"
-const slackChannel = "certmgr-notifications"
+const slackWebhook = ""
+const slackChannel = ""
 
 const albSecretConfig
 
