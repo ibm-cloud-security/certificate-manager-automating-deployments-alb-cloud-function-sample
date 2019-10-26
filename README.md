@@ -4,6 +4,8 @@ This sample demonstrates:
 - How to detect the `cert_renewed` certificate lifecycle event
 - How to update a Kubernetes cluster's Ingress host Secret resource with the renewed certificate using Kubernetes Service's ALB API
 
+The sample uses an IBM Cloud Functions action to execute the ALB API. You can also choose to implement this automation using the IBM Cloud CLI in a CI system such as Jenkins, Travis and others.
+
 > **Important:** This implementation requires you to have previously used ALB, either via CLI or API, to setup your Ingress service with a Secret that uses an ordered certificate prior to its renewal. To learn more about using ALB CLI commands or API, refer to the [IBM Cloud Kubernetes Service documentation](https://cloud.ibm.com/docs/containers?topic=containers-ingress-about).
 
 > **Important:** for demonstration purposes the sample handles a scenario of 1 cluster with an Ingress service that handles 1 host. If your topology uses more than 1 cluster and host, you will need to modify the Cloud Function action, eg:
