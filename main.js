@@ -100,7 +100,7 @@ async function deployCertificate(access_token, refresh_token, albSecretConfig) {
 // Send a success/failure notification to the provided Slack channel.
 async function sendToSlack(slackWebHook, data) {
     const options = {
-        url: slackWebhook,
+        url: slackWebHook,
         method: "POST",
         json: true,
         body: data
