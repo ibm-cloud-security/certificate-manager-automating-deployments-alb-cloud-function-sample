@@ -48,8 +48,10 @@ Create an API key for the Service ID. You will use the API key in the sample cod
 2. Deploy the sample
    
    * Select **Code** from the sidebar, and paste the contents of the **main.js** file from this repository
-   * Replace the property place holders with your values and click **Save**.
-   <br/>
+
+3. [Bind parameters to the action](https://cloud.ibm.com/docs/openwhisk/parameters.html#default-params-action) 
+
+   Select **Parameters** from the sidebar, and add the following:
    
    | Property | Description |
    |----------|-------------|

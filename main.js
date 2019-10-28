@@ -1,30 +1,39 @@
-const { promisify } = require('bluebird');
+const {promisify} = require('bluebird');
 const request = promisify(require('request'));
 const jwtVerify = promisify(require('jsonwebtoken').verify);
 
-/* Prerequisites */
 
-// The CRN-based instance ID of the Certificate Manager service instance.
-const instanceCrn = "";
+/**
+ * Replying error response.
+ * @param err
+ * @returns {{headers: {"Content-Type": string}, body: {message: string}, statusCode: *}}
+ */
+function replyError(err) {
+    console.log(`Action failed.Reason: ${JSON.stringify(err)}`);
+    return {
+        statusCode: err.statusCode ? err.statusCode : 500,
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: {
+            message: err.message ? err.message : "Error processing your request."
+        },
+    };
+}
 
-// An Service ID's API key with:
-// - "Administrator" platform access policy to the cluster the certificate will be deployed to.
-// - "Writer" service access policy to the Certificate Manager service instance the certificate is stored at.
-const apiKey = "";
-
-// The cluster ID.
-const clusterId = "";
-
-// The secret name as defined in your Ingress service.
-const secretName = "";
-
-// A Slack webhook and channel to send success/failure notifications to.
-const slackWebhook = ""
-const slackChannel = ""
-
-const albSecretConfig
-
-/* Functions */
+/**
+ * Replying success response.
+ * @returns {{headers: {"Content-Type": string}, body: {}, statusCode: number}}
+ */
+function replySuccess() {
+    return {
+        statusCode: 200,
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: {}
+    };
+}
 
 // Get the public key from the Certificate Manager service instance in order to decode the notification payload.
 async function getPublicKey(instanceCrn) {
@@ -58,12 +67,13 @@ async function getTokens(apiKey) {
             "Content-Type": "application/x-www-form-urlencoded",
             "Accept": "application/json"
         }
-    }
+    };
 
     const response = await request(options);
-    if (response.statusCode !== "200") {
+
+    if (response.statusCode !== 200) {
         console.error(`Couldn't get tokens from IBM Cloud IAM. Reason is: status code ${response.statusCode}.`);
-        throw new Error(`Couldn't obtain tokens. Reason: status code ${response.statusCode}.`);
+        throw {statusCode: 500, message: `Couldn't obtain tokens. Reason: status code ${response.statusCode}.`};
     }
 
     return {
@@ -82,61 +92,13 @@ async function deployCertificate(access_token, refresh_token, albSecretConfig) {
             "X-Auth-Refresh-Token": `Bearer ${refresh_token}`
         },
         body: albSecretConfig
-    }
+    };
 
-    const response = await request(options);
-    if (response.statusCode !== "204") {
-        sendToSlack({
-            text: `@channel ALB failed updating the certificate secret. Reason: statusCode: ${response.statusCode}`,
-            color: danger,
-            channel: slackChannel
-        });
-
-        throw new Error(`ALB failed updating the certificate secret. Reason: status code ${response.statusCode}.`);
-    }
-}
-
-// Verify the update state of the Ingress Secret.
-async function verifyDeployment(access_token, refresh_token, albSecretConfig) {
-    const options = {
-        method: "GET",
-        url: "https://containers.cloud.ibm.com/global/v1/alb/albsecrets",
-        headers: {
-            "Authorization": `Bearer ${access_token}`,
-            "X-Auth-Refresh-Token": `Bearer ${refresh_token}`
-        },
-        body: albSecretConfig
-    }
-
-    const response = await request(options);
-    if (response.statusCode !== "200") {
-        sendToSlack({
-            text: `@channel ALB failed updating the certificate secret. Reason: statusCode: ${response.statusCode}`,
-            color: danger,
-            channel: slackChannel
-        });
-
-        throw new Error(`ALB failed updating the certificate secret. Reason: status code ${response.statusCode}.`);
-    } else if (response.albSecrets[0].state === "updated") {
-        console.log(`ALB Secret updated in cluster ${clusterId}.`);
-        sendToSlack({
-            text: `@channel ALB Secret updated in cluster ${clusterId}.`,
-            color: good,
-            channel: slackChannel
-        });
-    } else {
-        sendToSlack({
-            text: `@channel ALB failed updating the certificate secret. Reason: statusCode: ${response.statusCode}`,
-            color: danger,
-            channel: slackChannel
-        });
-
-        throw new Error(`ALB failed updating the certificate secret. Reason: status code ${response.statusCode}.`);
-    }
+    return await request(options);
 }
 
 // Send a success/failure notification to the provided Slack channel.
-async function sendToSlack(data) {
+async function sendToSlack(slackWebHook, data) {
     const options = {
         url: slackWebhook,
         method: "POST",
@@ -146,7 +108,7 @@ async function sendToSlack(data) {
 
     const response = await request(options);
     if (response.statusCode !== 200) {
-        throw new Error(`Error occured when sending Slack message:` + JSON.stringify(response.body));
+        throw new Error(`Error occurred when sending Slack message:` + JSON.stringify(response.body));
     }
 }
 
@@ -154,43 +116,40 @@ async function sendToSlack(data) {
 async function main(params) {
     try {
         // Decode the notification payload using the Certificate Manager service instance's public key.
-        const publicKey = await getPublicKey(instanceCrn);
+        const publicKey = await getPublicKey(params.instanceCrn);
         const decodedNotificationPayload = await jwtVerify(params.data, publicKey);
         const albSecretConfig = {
             "certCrn": decodedNotificationPayload.certificates[0].cert_crn,
-            "clusterID": clusterId,
-            "secretName": secretName
-        }
+            "clusterID": params.clusterId,
+            "secretName": params.secretName
+        };
 
         // Check for the "cert_renewed" certificate lifecycle event type.
         if (decodedNotificationPayload.event_type === "cert_renewed") {
             // Get required tokens.
-            const { access_token, refresh_token } = await getTokens(apiKey);
+            const {access_token, refresh_token} = await getTokens(params.apiKey);
 
             // Deploy the renewed certificate to the cluster.
-            await deployCertificate(access_token, refresh_token, albSecretConfig);
+            const response = await deployCertificate(access_token, refresh_token, albSecretConfig);
 
-            // Wait 1 minute to allow the Ingress controller to finalize deployment, and then verify the deployment's state.
-            setTimeout(() => {
-                await verifyDeployment(access_token, refresh_token, albSecretConfig);
-            }, 60000);
+            if (response.statusCode !== 204) {
+                await sendToSlack(params.slackWebHook, {
+                    text: `@channel ALB failed updating the certificate secret. Reason: statusCode: ${response.statusCode}`,
+                    color: '#FF3D00',
+                    channel: params.slackChannel
+                });
+
+                return replyError({
+                    statusCode: response.statusCode,
+                    message: `ALB failed updating the certificate secret. Reason: status code ${response.statusCode}, body: ${JSON.stringify(response.body)}.`
+                });
+            } else {
+                console.log('Update ALB request accepted successfully.')
+                // Verify the deployment - it may take up to 1 minute to be deployed.
+            }
         }
     } catch (err) {
-        console.log(`Action failed.Reason: ${err}`);
-        return Promise.reject({
-            statusCode: err.statusCode ? err.statusCode : 500,
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: {
-                message: err.message ? err.message : "Error processing your request."
-            },
-        });
-    } return {
-        statusCode: 200,
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: {}
-    };
+        return replyError(err);
+    }
+    return replySuccess();
 }
