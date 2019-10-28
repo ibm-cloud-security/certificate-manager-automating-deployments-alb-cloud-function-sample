@@ -76,6 +76,8 @@ Create an API key for the Service ID. You will use the API key in the sample cod
 ## Testing
 After you have finished configuring your notification channel and Cloud Function action, you can optionally click on **Test Connection** from the channel menu. The test will send a test notification payload to your endpoint. 
 
+> **Note:** You can also extend the sample by calling a CI system, eg a Jenkins job, that will use the ALB API or CLI commands to verify that the renewed certificate is being used by the Ingress controller.
+
 ## More information
 - [Certificate Manager API docs](https://cloud.ibm.com/apidocs/certificate-manager)
 - [Event types and notification payloads](https://cloud.ibm.com/docs/services/certificate-manager?topic=certificate-manager-event-types-payload-versions)
