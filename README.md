@@ -1,4 +1,4 @@
-# Automating deployments using IBM Cloud's Kubernetes Service ALB API
+# Automating deployments using IBM Cloud's Kubernetes Service Application Load Balancer (ALB) API
 This sample demonstrates:
 
 - How to detect the `cert_renewed` certificate lifecycle event
