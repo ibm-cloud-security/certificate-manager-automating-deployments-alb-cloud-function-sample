@@ -77,8 +77,8 @@ async function getTokens(apiKey) {
     }
 
     return {
-        access_token: response.access_token,
-        refresh_token: response.refresh_token
+        access_token: response.body.access_token,
+        refresh_token: response.body.refresh_token
     }
 }
 
@@ -87,6 +87,7 @@ async function deployCertificate(access_token, refresh_token, albSecretConfig) {
     const options = {
         method: "PUT",
         url: "https://containers.cloud.ibm.com/global/v1/alb/albsecrets",
+        json: true,
         headers: {
             "Authorization": `Bearer ${access_token}`,
             "X-Auth-Refresh-Token": `Bearer ${refresh_token}`
