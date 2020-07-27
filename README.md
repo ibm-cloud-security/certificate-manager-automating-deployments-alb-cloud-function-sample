@@ -59,7 +59,7 @@ Create an API key for the Service ID. You will use the API key in the sample cod
    | `apiKey` | Your Service ID's API key. |
    | `clusterId` | Your Cluster ID. |
    | `secretName` | The secret name as defined in your Ingress YAML file. |
-   | `slackWebhook` | A Slack webhook used to send Slack notifications. |
+   | `slackWebHook` | A Slack webhook used to send Slack notifications. |
    | `slackChannel` | The Slack channel name where notifications will be sent to. |
   
 3. Select **Endpoints** from the sidebar, and tick the **Enable as Web Action** checkbox and click **Save**.
